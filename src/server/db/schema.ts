@@ -166,7 +166,7 @@ export const users = createTable("user", {
     mode: "date",
     withTimezone: true,
   }).defaultNow(),
-  image: varchar("image", { length: 255 }),
+  image: text("image"),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
