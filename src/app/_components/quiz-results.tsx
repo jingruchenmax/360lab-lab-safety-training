@@ -36,7 +36,7 @@ export const QuizResults = () => {
   return (
     <div className="v-screen flex h-screen items-center justify-center">
       <div className="flex flex-col space-y-3 bg-slate-500 p-3">
-        <p>User: {user!.name}</p>
+        <p>User: {user.name}</p>
         <p>Results:</p>
         {scores?.map(({ tagName, correct }, i) => (
           <div className="ml-3 flex flex-row" key={i}>
