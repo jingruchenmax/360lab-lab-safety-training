@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { quizQuestions, quizzes, tags } from "~/server/db/schema";
+import { quizQuestions, quizzes, tags, users } from "~/server/db/schema";
 
 const validQuizTagLabels = [
   "Glassware Sink",
@@ -187,6 +187,40 @@ export const quizRouter = createTRPCRouter({
       question.minDist ? question.minDist < 1 : null,
     );
   }),
+  getScoresById: protectedProcedure
+    .input(z.object({ quizId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { quizId } = input;
+      const quiz = await ctx.db.query.quizzes.findFirst({
+        where: and(eq(quizzes.id, quizId), isNotNull(quizzes.completedAt)),
+      });
+      if (!quiz) {
+        // throw new TRPCError({
+        //   code: "NOT_FOUND",
+        //   message: "There is no completed quiz with this id",
+        // });
+        return false;
+      }
+      const questions = await ctx.db.query.quizQuestions.findMany({
+        where: eq(quizQuestions.quizId, quiz.id),
+        orderBy: [asc(quizQuestions.index)],
+      });
+
+      const user = await ctx.db.query.users.findFirst({
+        where: eq(users.id, quiz.userId),
+        columns: {
+          id: true,
+          name: true,
+        },
+      });
+
+      return {
+        user: user!,
+        scores: questions.map((question) => {
+          return { tagName: question.tagName, correct: question.minDist! < 1 };
+        }),
+      };
+    }),
   getAllScores: protectedProcedure.query(async ({ ctx }) => {
     const quizScores = await ctx.db.query.quizzes.findMany({
       with: {
@@ -198,6 +232,7 @@ export const quizRouter = createTRPCRouter({
     });
 
     return quizScores.map((quiz) => ({
+      quizId: quiz.id,
       completedAt: quiz.completedAt,
       questions: quiz.questions.map((question) => ({
         tagName: question.tagName,

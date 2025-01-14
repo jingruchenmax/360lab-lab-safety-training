@@ -33,7 +33,7 @@ export const Quiz = (props: {
   const submitQuestion = api.quiz.submitQuestion.useMutation({
     onSuccess: async (done) => {
       if (done) {
-        router.push("/");
+        router.push(`/quizResults?id=${currentQuestion.quizId}`);
       }
 
       await utils.quiz.getQuiz.invalidate();

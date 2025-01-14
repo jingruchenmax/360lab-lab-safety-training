@@ -23,7 +23,7 @@ export const Home = () => {
         <iframe
           ref={(el) => setIframeElement(el)}
           className="h-full w-full border-0"
-          src={`https://my.matterport.com/show/?m=${env.NEXT_PUBLIC_MATTERPORT_MODEL_ID}&brand=0&qs=1&views=0&hr=0&tagNav=0&search=0&vr=0&play=1`}
+          src={`https://my.matterport.com/show/?m=${env.NEXT_PUBLIC_MATTERPORT_MODEL_ID}&brand=0&qs=1&views=0&hr=0&tagNav=0&search=0&vr=0&play=1&help=1`}
         ></iframe>
       </div>
     </MpSdkProvider>
