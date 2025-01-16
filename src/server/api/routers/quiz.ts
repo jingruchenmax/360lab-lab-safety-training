@@ -240,4 +240,38 @@ export const quizRouter = createTRPCRouter({
       })),
     }));
   }),
+  getPassingUsers: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.session.user.email === null || ctx.session.user.email !== "drelliott@wpi.edu") {
+      console.log(ctx.session.user);
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const users = await ctx.db.query.users.findMany({
+      with: {
+        quizzes: {
+          columns: {
+            completedAt: true,
+          },
+          with: {
+            questions: {
+              columns: {
+                minDist: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return users.map((user) => {
+      return {
+        name: user.name,
+        email: user.email,
+        completedQuiz: user.quizzes.some(
+          (quiz) =>
+            quiz.completedAt !== null &&
+            quiz.questions.every((question) => question.minDist! < 1),
+        ),
+      };
+    });
+  }),
 });
