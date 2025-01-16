@@ -2,13 +2,13 @@
 
 import { api } from "~/trpc/react";
 
-const csvify = (data: any[]) => {
+const csvify = (data: object[]) => {
   if (data.length === 0) {
     return "";
   }
 
-  let rows = [];
-  const headers = Object.keys(data[0]);
+  const rows = [];
+  const headers = Object.keys(data[0]!);
   rows.push(headers.join(","));
   for (const row of data) {
     rows.push(Object.values(row).join(","));
