@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { checkAuth } from "~/auth-helper";
 import { Report } from "../_components/report";
 import { Suspense } from "react";
+import { getServerAuthSession } from "~/server/auth";
 
 const ReportPage = async () => {
   const headerList = headers();

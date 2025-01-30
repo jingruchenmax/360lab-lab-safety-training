@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { checkAuth } from "~/auth-helper";
 import { Home } from "./_components/home-main";
-import { getServerAuthSession } from "~/server/auth";
 
 const HomePage = async () => {
   const headerList = headers();
