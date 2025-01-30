@@ -9,9 +9,6 @@ const HomePage = async () => {
   await checkAuth(pathname);
 
   const session = await getServerAuthSession();
-  if (session === null || session.user.email === null || session.user.email !== "drelliott@wpi.edu") {
-    return <p>Unauthorized</p>;
-  }
 
   return (
     <main>
