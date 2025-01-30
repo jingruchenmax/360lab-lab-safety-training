@@ -8,6 +8,8 @@ const ReportPage = async () => {
   const pathname = headerList.get("x-current-path");
   await checkAuth(pathname);
 
+  const session = await getServerAuthSession();
+
   if (session === null || session.user.email === null || session.user.email !== "drelliott@wpi.edu") {
     return <p>Unauthorized</p>;
   }

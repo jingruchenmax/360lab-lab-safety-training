@@ -8,8 +8,6 @@ const HomePage = async () => {
   const pathname = headerList.get("x-current-path");
   await checkAuth(pathname);
 
-  const session = await getServerAuthSession();
-
   return (
     <main>
       <Home />
