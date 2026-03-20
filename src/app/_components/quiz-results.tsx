@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getQuizState, resetDemoProgress, type DemoQuizState } from "./demo-progress";
 
 export const QuizResults = () => {
+  const router = useRouter();
   const [quizState, setQuizState] = useState<DemoQuizState | null>(null);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export const QuizResults = () => {
           className="mt-2 bg-slate-200 px-2 py-1 text-slate-900"
           onClick={() => {
             resetDemoProgress();
-            window.location.href = "/";
+            router.replace("/");
           }}
         >
           Reset Demo (Hard Refresh)

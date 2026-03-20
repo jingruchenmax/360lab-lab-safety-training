@@ -114,7 +114,7 @@ export const TagChecklist = () => {
           className="w-full bg-red-900/40 px-2 py-1 text-red-200"
           onClick={() => {
             resetDemoProgress();
-            window.location.href = "/";
+            router.replace("/");
           }}
         >
           Reset Demo
