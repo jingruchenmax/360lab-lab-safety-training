@@ -36,7 +36,6 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_MATTERPORT_MODEL_ID: z.string(),
-    NEXT_PUBLIC_MATTERPORT_SDK_KEY: z.string(),
   },
 
   /**
@@ -50,7 +49,6 @@ export const env = createEnv({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     MATTERPORT_API_TOKEN: process.env.MATTERPORT_API_TOKEN,
     MATTERPORT_API_SECRET: process.env.MATTERPORT_API_SECRET,
-    NEXT_PUBLIC_MATTERPORT_SDK_KEY: process.env.NEXT_PUBLIC_MATTERPORT_SDK_KEY,
     NEXT_PUBLIC_MATTERPORT_MODEL_ID: process.env.NEXT_PUBLIC_MATTERPORT_MODEL_ID,
     AZURE_AD_CLIENT_ID: process.env.AZURE_AD_CLIENT_ID,
     AZURE_AD_CLIENT_SECRET: process.env.AZURE_AD_CLIENT_SECRET,
@@ -60,7 +58,8 @@ export const env = createEnv({
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
    * useful for Docker builds.
    */
-  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
+  skipValidation:
+    !!process.env.SKIP_ENV_VALIDATION || typeof window !== "undefined",
   /**
    * Makes it so that empty strings are treated as undefined. `SOME_VAR: z.string()` and
    * `SOME_VAR=''` will throw an error.

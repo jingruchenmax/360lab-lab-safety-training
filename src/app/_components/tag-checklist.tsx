@@ -1,134 +1,124 @@
 import type { MpSdk } from "@matterport/sdk";
-import type { inferRouterOutputs } from "@trpc/server";
 import { useRouter } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
-import { env } from "~/env";
 import { MpSdkContext } from "~/mp_sdk_context";
-import type { AppRouter } from "~/server/api/root";
-import { api } from "~/trpc/react";
 import { ProgressCircle } from "./progress-circle";
 import { IoMdInformationCircleOutline } from "react-icons/io";
+import {
+  cacheSeenTag,
+  getSeenTagIds,
+  resetDemoProgress,
+  startDemoQuiz,
+} from "./demo-progress";
 
 export const TagChecklist = () => {
-  const tagQuery = api.matterport.tags.useQuery({
-    modelId: env.NEXT_PUBLIC_MATTERPORT_MODEL_ID,
-  });
-
-  const utils = api.useUtils();
-
-  const visitTag = api.matterport.viewTag.useMutation({
-    onSuccess: () => utils.matterport.tags.invalidate(),
-  });
-  const unvisitTag = api.matterport.deleteViews.useMutation();
-
-  const startQuiz = api.quiz.startQuiz.useMutation();
-
-  const [tags, setTags] = useState<
-    inferRouterOutputs<AppRouter>["matterport"]["tags"]
-  >({});
-
-  useEffect(() => {
-    if (tagQuery.data) {
-      setTags(tagQuery.data);
-    }
-  }, [tagQuery.data]);
-
   const mpSdk = useContext(MpSdkContext);
 
-  const [selected, setSelected] = useState("");
+  const [seenTagIds, setSeenTagIds] = useState<string[]>([]);
+  const [totalTags, setTotalTags] = useState(7);
 
   useEffect(() => {
-    if (mpSdk) {
-      const subscription = mpSdk.Tag.openTags.subscribe(
-        (openTags: MpSdk.Tag.OpenTags) => {
-          console.info("[360lab] got OpenTags event from mpSdk:", openTags);
-          const selectedId = openTags.selected.keys().next().value as string;
-          if (selected !== selectedId) {
-            console.info(`\tID: ${selectedId}`);
-            setSelected(selectedId ?? "");
+    setSeenTagIds(getSeenTagIds());
+  }, []);
 
-            if (selectedId !== undefined) {
-              const tagData = tags[selectedId];
-              console.log(`\tData: ${JSON.stringify(tagData)}`);
-
-              if (tagData !== undefined) {
-                console.info(`\tMarking ${tagData.label} as seen`);
-                visitTag.mutate({ tagId: selectedId });
-              }
-            }
-          }
-        },
-      );
-
-      return () => subscription.cancel();
+  useEffect(() => {
+    if (!mpSdk) {
+      return;
     }
-  }, [mpSdk, tags, selected, visitTag]);
 
-  const uncheckAll = async () => {
-    for (const id of Object.keys(tags)) {
-      await unvisitTag.mutateAsync({ tagId: id });
-    }
-    await utils.matterport.tags.invalidate();
-  };
+    const markSeen = (tagId: string | null | undefined) => {
+      if (!tagId) {
+        return;
+      }
+
+      setSeenTagIds(cacheSeenTag(tagId));
+    };
+
+    const openTagsSubscription = mpSdk.Tag.openTags.subscribe(
+      (openTags: MpSdk.Tag.OpenTags) => {
+        // Treat hover, select, and dock interactions as a "seen" event.
+        markSeen(openTags.hovered);
+        markSeen(openTags.docked);
+
+        for (const selectedId of openTags.selected) {
+          markSeen(selectedId);
+        }
+      },
+    );
+
+    const tagDataSubscription = mpSdk.Tag.data.subscribe({
+      onCollectionUpdated: (collection) => {
+        const tagCount = Object.keys(collection).length;
+        setTotalTags(Math.max(tagCount, 1));
+      },
+    });
+
+    return () => {
+      openTagsSubscription.cancel();
+      tagDataSubscription.cancel();
+    };
+  }, [mpSdk]);
 
   const router = useRouter();
 
-  if (tagQuery.isError) {
-    return <div>Error: {tagQuery.error.message}</div>;
-  }
-
-  const seen = Object.values(tags).filter((tag) => tag.seen).length;
-  const total = Object.values(tags).length;
+  const seen = seenTagIds.length;
+  const total = totalTags;
+  const sdkReady = mpSdk !== null;
+  const canMarkSeen = seen < total;
 
   return (
-    <div className="pointer-events-none absolute right-0 mr-8 h-full overflow-hidden text-slate-200 hover:overflow-scroll">
-      <div className="pointer-events-auto flex w-40 flex-col items-center bg-green-600/60 py-1">
-        {tagQuery.isLoading ? (
-          <p>Loading...</p>
-        ) : (
-          <>
-            <ProgressCircle
-              size={60}
-              strokeWidth={5}
-              progress={total !== 0 ? seen / total : 0}
-            />
-            <span className="self-center">
-              Tags: {seen}/{total}
-            </span>
-          </>
-        )}
+    <div className="pointer-events-none absolute top-0 left-0 m-4 text-slate-200">
+      <div className="pointer-events-auto flex w-56 flex-col items-center gap-2 bg-green-700/75 p-3">
+        <ProgressCircle
+          size={60}
+          strokeWidth={5}
+          progress={seen / total}
+        />
+        <span className="self-center">Seen tags: {seen}</span>
+        {!sdkReady ? (
+          <span className="px-2 text-center text-xs text-yellow-200">
+            Demo mode: SDK is disabled, use the button below to cache seen tags.
+          </span>
+        ) : null}
+        {!sdkReady ? (
+          <button
+            className="w-full bg-slate-900/60 px-2 py-1 text-sm"
+            disabled={!canMarkSeen}
+            onClick={() => {
+              const nextTagIndex = seen + 1;
+              setSeenTagIds(cacheSeenTag(`manual-tag-${nextTagIndex}`));
+            }}
+          >
+            {canMarkSeen ? "Mark Seen Tag" : "All Tags Marked"}
+          </button>
+        ) : null}
         <button
           onClick={() =>
             alert(
-              'Explore the lab space, click on the tags, and read the information within them. Once you feel satisfied that you understand the content and locations of the tags, click "Done."\n\n(You are not required to see every tag to take the quiz)',
+              'Explore the lab space, click on the tags, and read the information within them. Once you feel satisfied that you understand the content and locations of the tags, click "Done Learning / Start Quiz."\n\n(You are not required to see every tag to take the quiz)',
             )
           }
         >
           <IoMdInformationCircleOutline className="size-10" />
         </button>
-      </div>
-      <div className="pointer-events-auto absolute bottom-0 flex w-40 flex-col bg-green-600/80 py-1">
-        {/* <button onClick={uncheckAll}>Clear</button> */}
         <button
+          className="w-full bg-green-900/70 px-2 py-1"
           onClick={() => {
-            startQuiz.mutate();
+            startDemoQuiz();
             router.push("/quiz");
           }}
         >
-          Done
+          Done Learning / Start Quiz
         </button>
         <button
-          className="text-red-400"
-          onClick={() => router.push("/api/auth/signout")}
+          className="w-full bg-red-900/40 px-2 py-1 text-red-200"
+          onClick={() => {
+            resetDemoProgress();
+            window.location.href = "/";
+          }}
         >
-          Sign Out
+          Reset Demo
         </button>
-        {/*Object.entries(tags).map(([id, { label, seen }], idx: number) => (
-        <div key={idx}>
-          <input type="checkbox" readOnly checked={seen} value={id} />
-          <span>{label}</span>
-        </div>
-      ))*/}
       </div>
     </div>
   );

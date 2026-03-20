@@ -1,13 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { api } from "~/trpc/react";
+import { useEffect, useState } from "react";
+import { getQuizState, resetDemoProgress, type DemoQuizState } from "./demo-progress";
 
 export const QuizResults = () => {
-  const searchParams = useSearchParams();
-  const quizId = searchParams.get("id");
+  const [quizState, setQuizState] = useState<DemoQuizState | null>(null);
 
-  if (!quizId) {
+  useEffect(() => {
+    setQuizState(getQuizState());
+  }, []);
+
+  if (!quizState?.completed) {
     return (
       <div className="v-screen flex h-screen items-center justify-center">
         <div className="flex flex-col space-y-3 bg-slate-500 p-3">
@@ -16,36 +19,33 @@ export const QuizResults = () => {
       </div>
     );
   }
-
-  const [res, _scoresQuery] = api.quiz.getScoresById.useSuspenseQuery({
-    quizId,
-  });
-
-  if (res === false) {
-    return (
-      <div className="v-screen flex h-screen items-center justify-center">
-        <div className="flex flex-col space-y-3 bg-slate-500 p-3">
-          <p className="text-red-800">Invalid or unfinished quiz</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { user, scores } = res;
 
   return (
     <div className="v-screen flex h-screen items-center justify-center">
       <div className="flex flex-col space-y-3 bg-slate-500 p-3">
-        <p>User: {user.name}</p>
+        <p>User: Demo User</p>
         <p>Results:</p>
-        {scores?.map(({ tagName, correct }, i) => (
+        {quizState.questionTags.map((tagName, i) => {
+          const correct = quizState.scores[i] ?? false;
+
+          return (
           <div className="ml-3 flex flex-row" key={i}>
             <p>{tagName}: </p>
             <div
               className={`flex rounded-full ${correct ? "bg-green-500" : "bg-red-500"} mx-2 h-5 w-5`}
             ></div>
           </div>
-        ))}
+          );
+        })}
+        <button
+          className="mt-2 bg-slate-200 px-2 py-1 text-slate-900"
+          onClick={() => {
+            resetDemoProgress();
+            window.location.href = "/";
+          }}
+        >
+          Reset Demo (Hard Refresh)
+        </button>
       </div>
     </div>
   );

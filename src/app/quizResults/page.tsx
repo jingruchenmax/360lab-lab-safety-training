@@ -1,13 +1,7 @@
-import { headers } from "next/headers";
-import { checkAuth } from "~/auth-helper";
 import { QuizResults } from "../_components/quiz-results";
 import Link from "next/link";
 
 const QuizResultsPage = async () => {
-  const headerList = headers();
-  const pathname = headerList.get("x-current-path");
-  await checkAuth(pathname);
-
   return (
     <main>
       <QuizResults />
